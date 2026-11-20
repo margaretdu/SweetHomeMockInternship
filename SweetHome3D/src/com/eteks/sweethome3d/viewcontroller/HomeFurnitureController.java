@@ -54,7 +54,7 @@ public class HomeFurnitureController implements Controller {
    */
   public enum Property {ICON, NAME, NAME_VISIBLE, DESCRIPTION, PRICE, X, Y, ELEVATION, ANGLE_IN_DEGREES, BASE_PLAN_ITEM, 
       WIDTH, DEPTH,  HEIGHT, PROPORTIONAL, COLOR, PAINT, SHININESS, VISIBLE, MODEL_MIRRORED, LIGHT_POWER, 
-      RESIZABLE, DEFORMABLE, TEXTURABLE}
+      RESIZABLE, DEFORMABLE, VOLUME, TEXTURABLE}
   
   /**
    * The possible values for {@linkplain #getPaint() paint type}.
@@ -92,6 +92,8 @@ public class HomeFurnitureController implements Controller {
   private Float              proportionalDepth;
   private Float              height;
   private Float              proportionalHeight;
+  private Float              volume;
+  private Float              proportionalVolume;
   private boolean            proportional;
   private Integer            color;
   private FurniturePaint     paint;
@@ -183,6 +185,7 @@ public class HomeFurnitureController implements Controller {
       addPropertyChangeListener(Property.WIDTH, sizeChangeListener);
       addPropertyChangeListener(Property.DEPTH, sizeChangeListener);
       addPropertyChangeListener(Property.HEIGHT, sizeChangeListener);
+      addPropertyChangeListener(Property.VOLUME, sizeChangeListener);
     }
     return this.modelMaterialsController;
   }
@@ -242,6 +245,7 @@ public class HomeFurnitureController implements Controller {
       setWidth(null, true, false);
       setDepth(null, true, false);
       setHeight(null, true, false);
+      setVolume(null, true, false);
       setColor(null);
       if (textureController != null) {
         textureController.setTexture(null);
@@ -392,6 +396,15 @@ public class HomeFurnitureController implements Controller {
       for (int i = 1; i < selectedFurniture.size(); i++) {
         if (height.floatValue() != selectedFurniture.get(i).getHeight()) {
           height = null;
+          break;
+        }
+      }
+      setHeight(height, true, false);
+
+      Float volume = firstPiece.getVolume();
+      for (int i = 1; i < selectedFurniture.size(); i++) {
+        if (volume.floatValue() != selectedFurniture.get(i).getVolume()) {
+          volume = null;
           break;
         }
       }
@@ -937,6 +950,49 @@ public class HomeFurnitureController implements Controller {
       this.propertyChangeSupport.firePropertyChange(Property.HEIGHT.name(), oldHeight, adjustedHeight);
       if (oldHeight != null && adjustedHeight != null && updateWidthAndDepth) {
         float ratio = adjustedHeight / oldHeight;
+        if (this.proportionalWidth != null) {
+          setWidth(this.proportionalWidth * ratio, true, false);
+        }
+        if (this.proportionalDepth != null) {
+          setDepth(this.proportionalDepth * ratio, true, false);
+        }
+      }
+    }
+  }
+
+  /**
+   * Returns the edited volume.
+   */
+  public Float getVolume() {
+    return this.volume;
+  }
+
+  /**
+   * Sets the edited height.
+   */
+  public void setVolume(Float volume) {
+    setVolume(volume, false, isProportional());
+  }
+
+  private void setVolume(Float volume, boolean keepProportionalVolumeUnchanged, boolean updateVolume) {
+    Float adjustedVolume = volume != null
+            ? Math.max(volume, 0.001f)
+            : null;
+    if (adjustedVolume == volume
+            || adjustedVolume != null && adjustedVolume.equals(height)
+            || !keepProportionalVolumeUnchanged) {
+      this.proportionalVolume = volume;
+    }
+    if (adjustedVolume == null && this.volume != null
+            || adjustedVolume != null && !adjustedVolume.equals(this.height)) {
+      Float oldVolume = this.volume;
+      this.volume = adjustedVolume;
+      this.propertyChangeSupport.firePropertyChange(Property.VOLUME.name(), oldVolume, adjustedVolume);
+      if (oldVolume != null && adjustedVolume != null && updateVolume) {
+        float ratio = adjustedVolume / oldVolume;
+        if (this.proportionalHeight != null) {
+          setHeight(this.proportionalHeight * ratio, true, false);
+        }
         if (this.proportionalWidth != null) {
           setWidth(this.proportionalWidth * ratio, true, false);
         }
